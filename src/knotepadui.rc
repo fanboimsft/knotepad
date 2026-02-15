@@ -1,0 +1,25 @@
+<!DOCTYPE gui SYSTEM "kpartgui.dtd">
+<gui name="knotepad" version="2">
+  <MenuBar>
+    <Menu name="file">
+      <text>&amp;File</text>
+      <Action name="file_new"/>
+      <Action name="file_open"/>
+      <Separator/>
+      <Action name="file_save"/>
+      <Action name="file_save_as"/>
+      <Separator/>
+      <Action name="file_quit"/>
+    </Menu>
+    <Menu name="format">
+      <text>F&amp;ormat</text>
+      <Action name="format_bold"/>
+      <Action name="format_italic"/>
+      <Action name="format_underline"/>
+      <Separator/>
+      <Action name="format_bullet"/>
+      <Separator/>
+      <Action name="format_color"/>
+    </Menu>
+  </MenuBar>
+</gui>
