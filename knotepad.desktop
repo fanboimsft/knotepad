@@ -1,0 +1,13 @@
+[Desktop Entry]
+GenericName=Knotepad
+Name=Knotepad
+Comment=Simple rich text editor
+MimeType=text/plain;inode/directory;
+Exec=knotepad -b %U
+StartupNotify=true
+X-KDE-HasTempFileOption=true
+Icon=none
+Type=Application
+InitialPreference=9
+Categories=Qt;KDE;Utility;TextEditor
+Keywords=text;txt;editor
