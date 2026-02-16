@@ -1,4 +1,5 @@
 #include "documenttab.h"
+#include "rtfhandler.h"
 
 #include <QFile>
 #include <QFileInfo>
@@ -41,14 +42,20 @@ bool DocumentTab::loadFile(const QString &path) {
   QByteArray data = file.readAll();
   file.close();
 
-  // Try to detect HTML content
-  QString text = QString::fromUtf8(data);
-  if (text.trimmed().startsWith(QLatin1String("<!DOCTYPE html"),
-                                Qt::CaseInsensitive) ||
-      text.trimmed().startsWith(QLatin1String("<html"), Qt::CaseInsensitive)) {
-    m_editor->setHtml(text);
+  // Detect content type
+  QByteArray trimmed = data.trimmed();
+  if (trimmed.startsWith("{\\rtf")) {
+    // RTF content — use our RTF parser
+    RtfHandler::readRtf(data, m_editor->document());
   } else {
-    m_editor->setPlainText(text);
+    QString text = QString::fromUtf8(data);
+    if (text.trimmed().startsWith(QLatin1String("<!DOCTYPE html"),
+                                  Qt::CaseInsensitive) ||
+        text.trimmed().startsWith(QLatin1String("<html"), Qt::CaseInsensitive)) {
+      m_editor->setHtml(text);
+    } else {
+      m_editor->setPlainText(text);
+    }
   }
 
   m_filePath = path;
@@ -65,12 +72,17 @@ bool DocumentTab::saveFile(const QString &path) {
     return false;
   }
 
-  QTextStream stream(&file);
-
-  // Save as HTML to preserve formatting, plain text for .txt
   if (path.endsWith(QLatin1String(".txt"), Qt::CaseInsensitive)) {
+    // Plain text
+    QTextStream stream(&file);
     stream << m_editor->toPlainText();
+  } else if (path.endsWith(QLatin1String(".rtf"), Qt::CaseInsensitive)) {
+    // Real RTF format
+    QByteArray rtfData = RtfHandler::writeRtf(m_editor->document());
+    file.write(rtfData);
   } else {
+    // HTML (default for .html and other extensions)
+    QTextStream stream(&file);
     stream << m_editor->toHtml();
   }
 

@@ -211,7 +211,9 @@ void MainWindow::newTab() {
 
 void MainWindow::openFile() {
   QStringList filePaths = QFileDialog::getOpenFileNames(
-      this, i18n("Open File"), QString(), i18n("All Files (*)"));
+      this, i18n("Open File"), QString(),
+      i18n("All Supported Files (*.html *.rtf *.txt);;Rich Text (*.rtf);;HTML "
+           "Files (*.html);;Text Files (*.txt);;All Files (*)"));
 
   for (const QString &filePath : filePaths) {
     // Check if already open

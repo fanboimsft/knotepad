@@ -33,6 +33,8 @@ add_executable(knotepad
     src/mainwindow.h
     src/documenttab.cpp
     src/documenttab.h
+    src/rtfhandler.cpp
+    src/rtfhandler.h
     src/sessionmanager.cpp
     src/sessionmanager.h
 )
