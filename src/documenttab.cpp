@@ -19,7 +19,7 @@ DocumentTab::DocumentTab(QWidget *parent)
   m_editor->setTabStopDistance(40);
 
   // Set a sensible default font
-  QFont defaultFont(QStringLiteral("Sans Serif"), 10);
+  QFont defaultFont(QStringLiteral("Sans Serif"), 13);
   m_editor->setFont(defaultFont);
 
   connect(m_editor->document(), &QTextDocument::contentsChanged, this,

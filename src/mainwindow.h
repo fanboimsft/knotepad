@@ -33,6 +33,7 @@ private Q_SLOTS:
   void toggleBold();
   void toggleItalic();
   void toggleUnderline();
+  void toggleStrikethrough();
   void toggleBulletList();
   void selectTextColor();
   void onFontFamilyChanged(const QFont &font);
@@ -59,6 +60,7 @@ private:
   QAction *m_boldAction;
   QAction *m_italicAction;
   QAction *m_underlineAction;
+  QAction *m_strikethroughAction;
   QAction *m_bulletAction;
   QAction *m_colorAction;
 

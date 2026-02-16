@@ -129,6 +129,15 @@ void MainWindow::setupActions() {
           &MainWindow::toggleUnderline);
   formatMenu->addAction(m_underlineAction);
 
+  m_strikethroughAction =
+      new QAction(QIcon::fromTheme(QStringLiteral("format-text-strikethrough")),
+                  i18n("Strikethrough"), this);
+  ac->addAction(QStringLiteral("format_strikethrough"), m_strikethroughAction);
+  m_strikethroughAction->setCheckable(true);
+  connect(m_strikethroughAction, &QAction::triggered, this,
+          &MainWindow::toggleStrikethrough);
+  formatMenu->addAction(m_strikethroughAction);
+
   formatMenu->addSeparator();
 
   m_bulletAction =
@@ -166,7 +175,7 @@ void MainWindow::setupFormatToolbar() {
   // Font size spinner
   m_fontSizeSpinBox = new QSpinBox(formatBar);
   m_fontSizeSpinBox->setRange(6, 72);
-  m_fontSizeSpinBox->setValue(10);
+  m_fontSizeSpinBox->setValue(13);
   m_fontSizeSpinBox->setMaximumWidth(60);
   formatBar->addWidget(m_fontSizeSpinBox);
   connect(m_fontSizeSpinBox, &QSpinBox::valueChanged, this,
@@ -178,6 +187,7 @@ void MainWindow::setupFormatToolbar() {
   formatBar->addAction(m_boldAction);
   formatBar->addAction(m_italicAction);
   formatBar->addAction(m_underlineAction);
+  formatBar->addAction(m_strikethroughAction);
   formatBar->addSeparator();
   formatBar->addAction(m_bulletAction);
   formatBar->addSeparator();
@@ -341,6 +351,16 @@ void MainWindow::toggleUnderline() {
   tab->mergeFormat(fmt);
 }
 
+void MainWindow::toggleStrikethrough() {
+  DocumentTab *tab = currentTab();
+  if (!tab)
+    return;
+
+  QTextCharFormat fmt;
+  fmt.setFontStrikeOut(m_strikethroughAction->isChecked());
+  tab->mergeFormat(fmt);
+}
+
 void MainWindow::toggleBulletList() {
   DocumentTab *tab = currentTab();
   if (!tab)
@@ -394,6 +414,7 @@ void MainWindow::updateFormatActions() {
   m_boldAction->blockSignals(true);
   m_italicAction->blockSignals(true);
   m_underlineAction->blockSignals(true);
+  m_strikethroughAction->blockSignals(true);
   m_fontCombo->blockSignals(true);
   m_fontSizeSpinBox->blockSignals(true);
   m_bulletAction->blockSignals(true);
@@ -401,18 +422,20 @@ void MainWindow::updateFormatActions() {
   m_boldAction->setChecked(fmt.fontWeight() >= QFont::Bold);
   m_italicAction->setChecked(fmt.fontItalic());
   m_underlineAction->setChecked(fmt.fontUnderline());
+  m_strikethroughAction->setChecked(fmt.fontStrikeOut());
 
   QStringList families = fmt.fontFamilies().toStringList();
   QFont f(families.isEmpty() ? QStringLiteral("Sans Serif") : families.first());
   m_fontCombo->setCurrentFont(f);
   m_fontSizeSpinBox->setValue(
-      fmt.fontPointSize() > 0 ? static_cast<int>(fmt.fontPointSize()) : 10);
+      fmt.fontPointSize() > 0 ? static_cast<int>(fmt.fontPointSize()) : 13);
 
   m_bulletAction->setChecked(tab->isInBulletList());
 
   m_boldAction->blockSignals(false);
   m_italicAction->blockSignals(false);
   m_underlineAction->blockSignals(false);
+  m_strikethroughAction->blockSignals(false);
   m_fontCombo->blockSignals(false);
   m_fontSizeSpinBox->blockSignals(false);
   m_bulletAction->blockSignals(false);
