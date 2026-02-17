@@ -4,16 +4,22 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QAudioOutput>
 #include <QCloseEvent>
 #include <QColorDialog>
+#include <QComboBox>
 #include <QFileDialog>
+#include <QLabel>
+#include <QMediaPlayer>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QTextCharFormat>
 #include <QTextList>
+#include <QTimer>
 #include <QToolBar>
+#include <QToolButton>
 
 #include <KActionCollection>
 #include <KLocalizedString>
@@ -192,6 +198,59 @@ void MainWindow::setupFormatToolbar() {
   formatBar->addAction(m_bulletAction);
   formatBar->addSeparator();
   formatBar->addAction(m_colorAction);
+
+  // Timer section (after text color)
+  setupTimerWidgets(formatBar);
+}
+
+void MainWindow::setupTimerWidgets(QToolBar *formatBar) {
+  formatBar->addSeparator();
+
+  // Timer duration combo box
+  m_timerCombo = new QComboBox(formatBar);
+  for (int i = 1; i <= 20; ++i) {
+    m_timerCombo->addItem(i18np("%1 min", "%1 min", i), i);
+  }
+  m_timerCombo->setMaximumWidth(90);
+  m_timerCombo->setToolTip(i18n("Timer duration"));
+  formatBar->addWidget(m_timerCombo);
+
+  // Timer start/stop button
+  m_timerButton = new QToolButton(formatBar);
+  m_timerButton->setIcon(QIcon::fromTheme(QStringLiteral("chronometer")));
+  m_timerButton->setToolTip(i18n("Start Timer"));
+  m_timerButton->setCheckable(true);
+  formatBar->addWidget(m_timerButton);
+  connect(m_timerButton, &QToolButton::toggled, this, [this](bool checked) {
+    if (checked) {
+      startCountdown();
+    } else {
+      stopCountdown();
+    }
+  });
+
+  // Countdown label
+  m_timerLabel = new QLabel(QStringLiteral("00:00"), formatBar);
+  m_timerLabel->setToolTip(i18n("Time remaining"));
+  QFont monoFont(QStringLiteral("monospace"));
+  monoFont.setStyleHint(QFont::Monospace);
+  monoFont.setPointSize(11);
+  m_timerLabel->setFont(monoFont);
+  m_timerLabel->setMinimumWidth(50);
+  m_timerLabel->setAlignment(Qt::AlignCenter);
+  formatBar->addWidget(m_timerLabel);
+
+  // Internal QTimer for tick updates
+  m_countdownTimer = new QTimer(this);
+  m_countdownTimer->setInterval(1000);
+  connect(m_countdownTimer, &QTimer::timeout, this, &MainWindow::onTimerTick);
+
+  // Media player for alarm sound
+  m_mediaPlayer = new QMediaPlayer(this);
+  m_audioOutput = new QAudioOutput(this);
+  m_audioOutput->setVolume(1.0);
+  m_mediaPlayer->setAudioOutput(m_audioOutput);
+  m_mediaPlayer->setSource(QUrl(QStringLiteral("qrc:/assets/alarm.mp3")));
 }
 
 void MainWindow::newTab() {
@@ -505,4 +564,95 @@ void MainWindow::restoreSession() {
   if (activeIndex >= 0 && activeIndex < m_tabWidget->count()) {
     m_tabWidget->setCurrentIndex(activeIndex);
   }
+}
+
+// --- Timer slots ---
+
+void MainWindow::startCountdown() {
+  int minutes = m_timerCombo->currentData().toInt();
+  m_remainingSeconds = minutes * 60;
+
+  // Update label immediately
+  int mins = m_remainingSeconds / 60;
+  int secs = m_remainingSeconds % 60;
+  m_timerLabel->setText(QStringLiteral("%1:%2")
+                            .arg(mins, 2, 10, QLatin1Char('0'))
+                            .arg(secs, 2, 10, QLatin1Char('0')));
+
+  // Disable the combo while timer is running
+  m_timerCombo->setEnabled(false);
+  m_timerButton->setToolTip(i18n("Stop Timer"));
+  m_timerButton->setIcon(QIcon::fromTheme(QStringLiteral("media-playback-stop")));
+
+  m_countdownTimer->start();
+  statusBar()->showMessage(i18n("Timer started: %1 minute(s)", minutes));
+}
+
+void MainWindow::stopCountdown() {
+  m_countdownTimer->stop();
+  m_remainingSeconds = 0;
+  m_timerLabel->setText(QStringLiteral("00:00"));
+  m_timerCombo->setEnabled(true);
+  m_timerButton->setToolTip(i18n("Start Timer"));
+  m_timerButton->setIcon(QIcon::fromTheme(QStringLiteral("chronometer")));
+
+  // Uncheck without triggering the toggled signal
+  m_timerButton->blockSignals(true);
+  m_timerButton->setChecked(false);
+  m_timerButton->blockSignals(false);
+
+  // Stop alarm if playing
+  m_mediaPlayer->stop();
+
+  statusBar()->showMessage(i18n("Timer stopped"));
+}
+
+void MainWindow::onTimerTick() {
+  if (m_remainingSeconds <= 0) {
+    onTimerFinished();
+    return;
+  }
+
+  m_remainingSeconds--;
+
+  int mins = m_remainingSeconds / 60;
+  int secs = m_remainingSeconds % 60;
+  m_timerLabel->setText(QStringLiteral("%1:%2")
+                            .arg(mins, 2, 10, QLatin1Char('0'))
+                            .arg(secs, 2, 10, QLatin1Char('0')));
+
+  if (m_remainingSeconds <= 0) {
+    onTimerFinished();
+  }
+}
+
+void MainWindow::onTimerFinished() {
+  m_countdownTimer->stop();
+  m_timerLabel->setText(QStringLiteral("00:00"));
+
+  // Play alarm sound
+  m_mediaPlayer->setPosition(0);
+  m_mediaPlayer->play();
+
+  // Reset the button and combo state
+  m_timerCombo->setEnabled(true);
+  m_timerButton->blockSignals(true);
+  m_timerButton->setChecked(false);
+  m_timerButton->setIcon(QIcon::fromTheme(QStringLiteral("chronometer")));
+  m_timerButton->setToolTip(i18n("Start Timer"));
+  m_timerButton->blockSignals(false);
+
+  // Show notification dialog
+  QMessageBox msgBox(this);
+  msgBox.setWindowTitle(i18n("Timer"));
+  msgBox.setText(i18n("Time is up!"));
+  msgBox.setIcon(QMessageBox::Information);
+  msgBox.setStandardButtons(QMessageBox::Ok);
+  msgBox.setDefaultButton(QMessageBox::Ok);
+  msgBox.exec();
+
+  // Stop alarm after user dismisses dialog
+  m_mediaPlayer->stop();
+
+  statusBar()->showMessage(i18n("Timer finished"));
 }

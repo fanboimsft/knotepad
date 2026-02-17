@@ -15,7 +15,7 @@ include(KDEInstallDirs)
 include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets PrintSupport)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets PrintSupport Multimedia)
 find_package(KF6 REQUIRED COMPONENTS
     CoreAddons
     I18n
@@ -37,6 +37,7 @@ add_executable(knotepad
     src/rtfhandler.h
     src/sessionmanager.cpp
     src/sessionmanager.h
+    src/resources.qrc
 )
 
 target_link_libraries(knotepad
@@ -44,6 +45,7 @@ target_link_libraries(knotepad
     Qt6::Gui
     Qt6::Widgets
     Qt6::PrintSupport
+    Qt6::Multimedia
     KF6::CoreAddons
     KF6::I18n
     KF6::XmlGui
